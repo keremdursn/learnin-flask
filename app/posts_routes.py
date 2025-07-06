@@ -40,6 +40,38 @@ def gonderileri_listele():
     return gonderi_list_schema.jsonify(tum_gonderiler)
 
 
+# Sorguyla gönderi listeleme
+@posts_bp.route("", methods=["GET"])
+def sorgulu_gonderi_listele():
+    # Query string parametrelerini al
+    kullanici_id = request.args.get("kullanici_id", type=int)
+    aranan = request.args.get("aranan", type=str)
+    orderby = request.args.get("orderby", default="created_at")
+    order = request.args.get("order", default="desc")
+    page = request.args.get("page", default=1, type=int)
+    per_page = request.args.get("per_page", default=5, type=int)
+
+    # Sorguyu başlat
+    sorgu = Gonderi.query
+    
+    if kullanici_id:
+        sorgu = sorgu.filter_by(kullanici_id=kullanici_id)
+    if aranan:
+        sorgu = sorgu.filter(
+            Gonderi.baslik.ilike(f"%{aranan}%") | Gonderi.icerik.ilike(f"%{aranan}%")
+        )
+
+    siralama_kriteri = getattr(Gonderi, orderby, Gonderi.created_at)
+    if order == "desc":
+        sorgu = sorgu.order_by(siralama_kriteri.desc())
+    else:
+        sorgu = sorgu.order_by(siralama_kriteri)
+    
+    sayfa = sorgu.paginate(page=page, per_page=per_page, error_out=False)
+
+    return gonderi_list_schema.jsonify(sayfa.items)
+
+
 # ID ye göre gönderi getirme
 @posts_bp.route("/<int:gid>", methods=["GET"])
 def gonderi_getir(gid):
