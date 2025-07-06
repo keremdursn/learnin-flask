@@ -2,6 +2,7 @@ from flask import request, jsonify, Blueprint
 from app import db
 from app.models import Gonderi
 from app.schemas import GonderiSchema
+from app.utils import admin_required
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 
@@ -129,3 +130,13 @@ def kendi_gonderilerim():
     gonderiler = Gonderi.query.filter_by(kullanici_id=kullanici_id).all()
     
     return gonderi_list_schema.jsonify(gonderiler)
+
+
+@posts_bp.route("/admin-temizle", methods=["DELETE"])
+@jwt_required()
+@admin_required
+def tum_gonderileri_temizle():
+    from app.models import Gonderi
+    Gonderi.query.delete()
+    db.session.commit()
+    return jsonify({"mesaj": "Tüm gönderiler silindi!"})
