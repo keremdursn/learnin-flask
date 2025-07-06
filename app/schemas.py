@@ -28,6 +28,7 @@ class GonderiSchema(ma.SQLAlchemyAutoSchema):
     id = ma.auto_field()
     baslik = ma.Str(required=True)
     icerik = ma.Str(required=True)
+    resim = ma.Str(dump_only=True)
     kullanici_id = fields.Integer(dump_only=True)
 
     Kullanici = fields.Nested(KullaniciPublicSchema)

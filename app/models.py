@@ -28,6 +28,7 @@ class Gonderi(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     baslik = db.Column(db.String(100), nullable=False)
     icerik = db.Column(db.Text, nullable=False)
+    resim_url = db.Column(db.String(200), nullable=False)
     kullanici_id = db.Column(db.Integer, db.ForeignKey('kullanici.id'), nullable=False)
     rol = db.Column(db.String(20), default="user")  # varsayılan rol
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

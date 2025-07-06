@@ -27,9 +27,15 @@ app.register_blueprint(yorum_bp, url_prefix='/api/yorum')
 from app.arama_routes import arama_bp
 app.register_blueprint(arama_bp, url_prefix="/api/arama")
 
+from app.admin_routes import admin_bp
+app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
-# Modelleri import et (tablo oluşturmak için)
-from app import models
+
+from flask import send_from_directory
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Güvenli bir anahtar belirleyin

@@ -1,10 +1,11 @@
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint, current_app
 from app import db
 from app.models import Gonderi
 from app.schemas import GonderiSchema
-from app.utils import admin_required
+from app.utils import admin_required, allowed_file
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-
+from werkzeug.utils import secure_filename
+import os
 
 posts_bp = Blueprint('posts_bp', __name__)
 
@@ -15,6 +16,8 @@ gonderi_list_schema = GonderiSchema(many=True)
 # Gönderi ekleme
 @posts_bp.route("", methods=["POST"])
 def gonderi_ekle():
+    Kullanici_id = get_jwt_identity()
+
     json_data = request.get_json()
     if not json_data:
         return jsonify({"hata": "JSON verisi eksik"}), 400
@@ -25,8 +28,9 @@ def gonderi_ekle():
         return jsonify({"hata": str(e)}), 400
     
     
-    Kullanici_id = get_jwt_identity()
+    
     yeni.kullanici_id = Kullanici_id
+
     
     db.session.add(yeni)
     db.session.commit()
@@ -130,6 +134,41 @@ def kendi_gonderilerim():
     gonderiler = Gonderi.query.filter_by(kullanici_id=kullanici_id).all()
     
     return gonderi_list_schema.jsonify(gonderiler)
+
+
+# Gönderiye Resim Yükleme Endpoint’i
+@posts_bp.route("/<int:gid>/resim", methods=["POST"])
+@jwt_required()
+def gonderi_resim_ekle(gid):
+    gonderi = Gonderi.query.get(gid)
+    if not gonderi:
+        return jsonify({"hata": "Gönderi bulunamadı"}), 404
+
+    kullanici_id = get_jwt_identity()
+    if gonderi.kullanici_id != kullanici_id:
+        return jsonify({"hata": "Bu gönderiye resim yükleyemezsiniz"}), 403
+
+    if 'dosya' not in request.files:
+        return jsonify({"hata": "Dosya alanı eksik"}), 400
+
+    dosya = request.files['dosya']
+
+    if dosya.filename == '':
+        return jsonify({"hata": "Dosya seçilmedi"}), 400
+
+    if dosya and allowed_file(dosya.filename):
+        filename = secure_filename(dosya.filename)
+        yol = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        dosya.save(yol)
+
+        # Resim URL'si olarak path'i kaydet (basit örnek)
+        gonderi.resim_url = f"/uploads/{filename}"
+        db.session.commit()
+
+        return jsonify({"mesaj": "Resim yüklendi", "url": gonderi.resim_url}), 200
+
+    return jsonify({"hata": "Geçersiz dosya formatı"}), 400
+
 
 
 @posts_bp.route("/admin-temizle", methods=["DELETE"])
