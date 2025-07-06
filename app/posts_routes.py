@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint
 from app import db
-from app.models import Kullanici, Gonderi
+from app.models import Gonderi
 from app.schemas import GonderiSchema
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 

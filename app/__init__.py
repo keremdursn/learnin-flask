@@ -24,6 +24,9 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 from app.comments_routes import yorum_bp
 app.register_blueprint(yorum_bp, url_prefix='/api/yorum')
 
+from app.arama_routes import arama_bp
+app.register_blueprint(arama_bp, url_prefix="/api/arama")
+
 
 # Modelleri import et (tablo oluşturmak için)
 from app import models
