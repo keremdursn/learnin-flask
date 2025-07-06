@@ -1,26 +1,35 @@
 # app/__init__.py
 
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
 from flask_mail import Mail
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from app.config import Config
 
+
+# Global nesneler
 db = SQLAlchemy()
 ma = Marshmallow()
 jwt = JWTManager()
 mail = Mail()
+limiter = Limiter(key_func=get_remote_address)  # 🔐 Rate Limiter eklendi
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    CORS(app)
 
     # Genişletici modülleri initialize et
     db.init_app(app)
     ma.init_app(app)
     jwt.init_app(app)
     mail.init_app(app)
+    limiter.init_app(app)  # ✅ Rate limit başlatıldı
 
     # Blueprint'leri import ve register et
     from app.users_routes import users_bp
@@ -38,8 +47,8 @@ def create_app():
     app.register_blueprint(arama_bp, url_prefix="/api/arama")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
-    # Global error handlers
-    register_error_handlers(app)
+    # # Global error handlers
+    # register_error_handlers(app)
 
     # Uploads klasörü için dosya servisi
     from flask import send_from_directory

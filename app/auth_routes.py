@@ -1,4 +1,4 @@
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint, url_for
 from app import db
 from app.models import Kullanici
 from app.schemas import KullaniciSchema
