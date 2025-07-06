@@ -1,46 +1,54 @@
-from flask import Flask, request, jsonify
+# app/__init__.py
+
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
+from flask_mail import Mail
+from app.config import Config
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy()
+ma = Marshmallow()
+jwt = JWTManager()
+mail = Mail()
 
-db = SQLAlchemy(app)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-ma = Marshmallow(app)
+    # Genişletici modülleri initialize et
+    db.init_app(app)
+    ma.init_app(app)
+    jwt.init_app(app)
+    mail.init_app(app)
 
+    # Blueprint'leri import ve register et
+    from app.users_routes import users_bp
+    from app.posts_routes import posts_bp
+    from app.auth_routes import auth_bp
+    from app.comments_routes import yorum_bp
+    from app.arama_routes import arama_bp
+    from app.admin_routes import admin_bp
+    from app.error_handlers import register_error_handlers
 
-# Blueprint’leri import et
-from app.users_routes import users_bp
-from app.posts_routes import posts_bp
-app.register_blueprint(users_bp, url_prefix='/api/kullanicilar')
-app.register_blueprint(posts_bp, url_prefix='/api/gonderiler')
+    app.register_blueprint(users_bp, url_prefix='/api/kullanicilar')
+    app.register_blueprint(posts_bp, url_prefix='/api/gonderiler')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(yorum_bp, url_prefix='/api/yorum')
+    app.register_blueprint(arama_bp, url_prefix="/api/arama")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
-from app.auth_routes import auth_bp
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    # Global error handlers
+    register_error_handlers(app)
 
-from app.comments_routes import yorum_bp
-app.register_blueprint(yorum_bp, url_prefix='/api/yorum')
+    # Uploads klasörü için dosya servisi
+    from flask import send_from_directory
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-from app.arama_routes import arama_bp
-app.register_blueprint(arama_bp, url_prefix="/api/arama")
+    # Veritabanı tablolarını oluştur
+    with app.app_context():
+        db.create_all()
 
-from app.admin_routes import admin_bp
-app.register_blueprint(admin_bp, url_prefix="/api/admin")
-
-
-from flask import send_from_directory
-
-@app.route('/uploads/<path:filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-jwt = JWTManager(app)
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Güvenli bir anahtar belirleyin
-
-
-# Veritabanını oluştur (eğer tablolar yoksa)
-with app.app_context():
-    db.create_all()
+    return app
